@@ -88,9 +88,9 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
     @State private var currentTarget: Int? = nil
     @State private var rowSizes: [Int: CGSize] = [:]
     @State private var topPositions: [CGFloat] = []
-    
+
     public init(items: Binding<[Item]>, spacing: CGFloat? = nil, @ViewBuilder content: @escaping () -> Content) {
-        self._items = items
+        _items = items
         self.spacing = spacing
         self.content = content
     }
@@ -98,13 +98,13 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
     public var body: some View {
         VStack(spacing: spacing ?? 0) {
             Group(subviews: content()) { collection in
-                ForEach(Array(collection.enumerated()), id: \.element.id) { index, item in
+                ForEach(Array(0 ..< collection.count), id: \.self) { index in
                     let isDragging = (sourceIndex == index)
-                    let shift = shiftForRow(at: index, positions: topPositions)
-                    
+                    let shift = shiftForRow(at: index)
+
                     let rowView = ReorderingRow(
                         index: index,
-                        content: { item },
+                        content: { collection[index] },
                         dragChanged: { value in
                             handleDragChanged(for: index, value: value)
                         },
@@ -112,7 +112,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
                             handleDragEnded()
                         }
                     )
-                    
+
                     rowView
                         .sizeReader(sizeBinding(index: index))
                         .opacity(isDragging ? 0 : 1)
@@ -131,6 +131,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
             }
         }
         .onChange(of: rowSizes) {
+            print("rowSizes changed")
             self.topPositions = computeTopPositions()
         }
     }
@@ -153,6 +154,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
 
     // Returns the Y positions (tops) for each row.
     func computeTopPositions() -> [CGFloat] {
+        print("computing top pos")
         var positions: [CGFloat] = []
         var current: CGFloat = 0
         for i in 0 ..< items.count {
@@ -172,15 +174,22 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
     }
 
     // Compute dynamic shift for a row based on drag source and current target.
-    func shiftForRow(at index: Int, positions _: [CGFloat]) -> CGFloat {
-        guard let source = sourceIndex else { return 0 }
-        // Include both the measured height and the spacing.
-        let draggingTotal = (rowSizes[source]?.height ?? 0.0) + (spacing ?? 0)
-        let currentTargetIndex = currentTarget ?? source
-        if source < currentTargetIndex && index > source && index <= currentTargetIndex {
-            return -draggingTotal
-        } else if source > currentTargetIndex && index < source && index >= currentTargetIndex {
-            return draggingTotal
+    func shiftForRow(at index: Int) -> CGFloat {
+        guard let source = sourceIndex, let target = currentTarget else {
+            return 0
+        }
+        let rowHeight = (rowSizes[source]?.height ?? 0) + (spacing ?? 0)
+
+        if source < target {
+            // Dragging downward
+            if index > source && index <= target {
+                return -rowHeight
+            }
+        } else if source > target {
+            // Dragging upward
+            if index < source && index >= target {
+                return rowHeight
+            }
         }
         return 0
     }
@@ -227,20 +236,21 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
         guard let source = sourceIndex, let draggingItem = draggingItem else { return }
         let newIndex = currentTarget ?? source
 
+        // Capture the old positions (current order)
         let oldPositions = topPositions
 
-        // Map item to its size for current ordering.
+        // Build a mapping from item to its size using the current order.
         var sizeForItem: [Item: CGSize] = [:]
         for (index, item) in items.enumerated() {
             sizeForItem[item] = rowSizes[index] ?? .zero
         }
 
-        // Build the new hypothetical order.
+        // Create a hypothetical new order: remove the dragged item from its old position and insert it at newIndex.
         var hypotheticalItems = items
         hypotheticalItems.remove(at: source)
         hypotheticalItems.insert(draggingItem, at: newIndex)
 
-        // Compute new top positions for the new order.
+        // Compute new top positions based on the hypothetical new order.
         var newPositions: [CGFloat] = []
         var current: CGFloat = 0
         for (i, item) in hypotheticalItems.enumerated() {
@@ -248,13 +258,15 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
             let height = sizeForItem[item]?.height ?? 0.0
             current += height
             if i < hypotheticalItems.count - 1 {
-                current += spacing ?? 0
+                current += spacing ?? 0.0
             }
         }
 
-        // Determine the final offset.
+        // Calculate the final offset:
+        // We want the dragged row's top to move from its old position to the target slot in the new layout.
         let finalOffset = newPositions[newIndex] - oldPositions[source]
 
+        // Animate the overlay from its current position to the target position.
         withAnimation(.spring(duration: 0.25)) {
             dragOffset = finalOffset
         } completion: {
