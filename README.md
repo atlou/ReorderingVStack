@@ -10,10 +10,10 @@ A simple SwiftUI view that lets you reorder items in a vertical stack with drag-
 ## Usage
 ``` swift
 import SwiftUI
-import ReorderingVStack
+import ReorderingVStack // import the package
 
 struct ContentView: View {
-    @State private var items = Item.mocks // Must conform to Hashable and Identifiable
+    @State private var items = Item.mocks // must conform to Hashable and Identifiable
 
     var body: some View {
         ReorderingVStack(items: $items, spacing: 10) { item in
@@ -21,7 +21,7 @@ struct ContentView: View {
                 Text(item.title)
                 Spacer()
                 Image(systemName: "line.3.horizontal")
-                    .dragToReorder() // Makes the image act as the drag handle
+                    .dragToReorder() // makes the image act as the drag handle
             }
             .padding()
             .background(.background.secondary, in: .rect(cornerRadius: 8))
