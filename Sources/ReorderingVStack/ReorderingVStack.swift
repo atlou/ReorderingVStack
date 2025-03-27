@@ -37,7 +37,7 @@ private extension EnvironmentValues {
     @Entry var dragEnded: ((DragGesture.Value) -> Void)? = nil
 }
 
-extension View {
+public extension View {
     func dragToReorder(_ isEnabled: Bool = true) -> some View {
         modifier(DragToReorderModifier(isEnabled: isEnabled))
     }
@@ -88,6 +88,12 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
     @State private var currentTarget: Int? = nil
     @State private var rowSizes: [Int: CGSize] = [:]
     @State private var topPositions: [CGFloat] = []
+    
+    public init(items: Binding<[Item]>, spacing: CGFloat? = nil, @ViewBuilder content: @escaping (Item) -> Content) {
+        self._items = items
+        self.spacing = spacing
+        self.content = content
+    }
 
     public var body: some View {
         VStack(spacing: spacing ?? 0) {
