@@ -4,7 +4,7 @@ A simple SwiftUI view that lets you reorder items in a vertical stack with drag-
 
 ## Preview
 <p align=center>
-<img src=https://github.com/user-attachments/assets/a4f5639f-d2d3-49c1-bf3c-c081aa242c0e width=100%>
+<img src=https://github.com/user-attachments/assets/578c3393-f231-4fba-915f-01a5e6535368 width=100%>
 </p>
 
 ## Usage
