@@ -80,7 +80,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
     @Binding var items: [Item]
     var spacing: CGFloat?
 
-    @ViewBuilder var content: (Item) -> Content
+    @ViewBuilder var content: () -> Content
 
     @State private var dragOffset: CGFloat = 0
     @State private var sourceIndex: Int? = nil
@@ -89,7 +89,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
     @State private var rowSizes: [Int: CGSize] = [:]
     @State private var topPositions: [CGFloat] = []
     
-    public init(items: Binding<[Item]>, spacing: CGFloat? = nil, @ViewBuilder content: @escaping (Item) -> Content) {
+    public init(items: Binding<[Item]>, spacing: CGFloat? = nil, @ViewBuilder content: @escaping () -> Content) {
         self._items = items
         self.spacing = spacing
         self.content = content
@@ -97,35 +97,37 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
 
     public var body: some View {
         VStack(spacing: spacing ?? 0) {
-            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                let isDragging = (sourceIndex == index)
-                let shift = shiftForRow(at: index, positions: topPositions)
-
-                let rowView = ReorderingRow(
-                    index: index,
-                    content: { content(item) },
-                    dragChanged: { value in
-                        handleDragChanged(for: index, value: value)
-                    },
-                    dragEnded: { _ in
-                        handleDragEnded()
-                    }
-                )
-
-                rowView
-                    .sizeReader(sizeBinding(index: index))
-                    .opacity(isDragging ? 0 : 1)
-                    .offset(y: isDragging ? 0 : shift)
-                    .zIndex(isDragging ? 1 : 0)
-                    .overlay {
-                        if isDragging {
-                            rowView
-                                .offset(y: dragOffset)
+            Group(subviews: content()) { collection in
+                ForEach(Array(collection.enumerated()), id: \.element.id) { index, item in
+                    let isDragging = (sourceIndex == index)
+                    let shift = shiftForRow(at: index, positions: topPositions)
+                    
+                    let rowView = ReorderingRow(
+                        index: index,
+                        content: { item },
+                        dragChanged: { value in
+                            handleDragChanged(for: index, value: value)
+                        },
+                        dragEnded: { _ in
+                            handleDragEnded()
                         }
-                    }
-                    .sensoryFeedback(.selection, trigger: currentTarget) { old, new in
-                        new != nil && old != nil
-                    }
+                    )
+                    
+                    rowView
+                        .sizeReader(sizeBinding(index: index))
+                        .opacity(isDragging ? 0 : 1)
+                        .offset(y: isDragging ? 0 : shift)
+                        .zIndex(isDragging ? 1 : 0)
+                        .overlay {
+                            if isDragging {
+                                rowView
+                                    .offset(y: dragOffset)
+                            }
+                        }
+                        .sensoryFeedback(.selection, trigger: currentTarget) { old, new in
+                            new != nil && old != nil
+                        }
+                }
             }
         }
         .onChange(of: rowSizes) {
