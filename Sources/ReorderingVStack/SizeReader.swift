@@ -33,14 +33,14 @@
 import SwiftUI
 
 struct SizeReader: ViewModifier {
+    let index: Int
     @Binding var size: CGSize
 
     func body(content: Content) -> some View {
         content
             .background {
                 GeometryReader { geo in
-                    Rectangle()
-                        .fill(.clear)
+                    Color.clear
                         .onAppear {
                             size = geo.size
                         }
@@ -48,13 +48,14 @@ struct SizeReader: ViewModifier {
                             size = geo.size
                         }
                 }
+                .id(index)
             }
     }
 }
 
 extension View {
-    func sizeReader(_ size: Binding<CGSize>) -> some View {
-        modifier(SizeReader(size: size))
+    func sizeReader(_ index: Int, size: Binding<CGSize>) -> some View {
+        modifier(SizeReader(index: index, size: size))
     }
 }
 #endif

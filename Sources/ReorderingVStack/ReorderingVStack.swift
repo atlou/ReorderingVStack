@@ -98,7 +98,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
     public var body: some View {
         VStack(spacing: spacing ?? 0) {
             Group(subviews: content()) { collection in
-                ForEach(Array(0 ..< collection.count), id: \.self) { index in
+                ForEach(Array(zip(items.indices, items)), id: \.1.id) { (index, item) in
                     let isDragging = (sourceIndex == index)
                     let shift = shiftForRow(at: index)
 
@@ -114,7 +114,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
                     )
 
                     rowView
-                        .sizeReader(sizeBinding(index: index))
+                        .sizeReader(index, size: sizeBinding(index: index))
                         .opacity(isDragging ? 0 : 1)
                         .offset(y: isDragging ? 0 : shift)
                         .zIndex(isDragging ? 1 : 0)
