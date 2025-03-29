@@ -1,6 +1,6 @@
 # ReorderingVStack
 
-A simple SwiftUI view that lets you reorder items in a vertical stack with drag-and-drop.
+A simple SwiftUI view that lets you reorder items in a VStack with drag-and-drop.
 
 ## Preview
 <p align=center>
