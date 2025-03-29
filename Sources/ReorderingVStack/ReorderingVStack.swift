@@ -226,7 +226,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
 
         let computedTarget = computeTargetIndex(newY: newY, positions: topPositions)
         if computedTarget != currentTarget {
-            withAnimation(.spring(duration: 0.1)) {
+            withAnimation(.spring(duration: 0.2)) {
                 currentTarget = computedTarget
             }
         }
