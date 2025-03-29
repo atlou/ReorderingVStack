@@ -33,11 +33,6 @@ struct ContentView: View {
 }
 ```
 
-## Installation
-
-Add it to your project with Swift Package Manager by using the repository URL.
-
-
 ## License
 
 ReorderingVStack is open source and available under the MIT License. See the LICENSE file for more details.
