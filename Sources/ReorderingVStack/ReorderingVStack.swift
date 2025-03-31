@@ -29,7 +29,6 @@
 //  Created by Xavier on 27/03/2025.
 //
 
-#if os(iOS)
 import SwiftUI
 
 private extension EnvironmentValues {
@@ -279,4 +278,3 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
         }
     }
 }
-#endif
