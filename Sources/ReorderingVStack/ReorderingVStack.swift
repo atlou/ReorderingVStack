@@ -144,9 +144,17 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
 
     func sizeBinding(index: Int) -> Binding<CGSize> {
         Binding(
-            get: { rowSizes[index] ?? .zero },
+            get: {
+                if index < rowSizes.count {
+                    return rowSizes[index] ?? .zero
+                } else {
+                    return .zero
+                }
+            },
             set: { new in
-                rowSizes[index] = new
+                if index < rowSizes.count {
+                    rowSizes[index] = new
+                }
             }
         )
     }
