@@ -239,13 +239,13 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
         let maxY: CGFloat = topPositions[lastIndex] + (rowSizes[lastIndex]?.height ?? 0.0) - (rowSizes[sourceIndex ?? 0]?.height ?? 0.0)
         let newY = max(min(originalY + rawOffset, maxY), minY)
 
-        withAnimation(.spring(duration: 0.1 * speed)) {
+        withAnimation(.spring(duration: 0.1 / speed)) {
             dragOffset = newY - originalY
         }
 
         let computedTarget = computeTargetIndex(newY: newY, positions: topPositions)
         if computedTarget != currentTarget {
-            withAnimation(.spring(duration: 0.15 * speed)) {
+            withAnimation(.spring(duration: 0.15 / speed)) {
                 currentTarget = computedTarget
             }
         }
@@ -286,7 +286,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
         let finalOffset = newPositions[newIndex] - oldPositions[source]
 
         // Animate the overlay from its current position to the target position.
-        withAnimation(.spring(duration: 0.25 * speed)) {
+        withAnimation(.spring(duration: 0.25 / speed)) {
             dragOffset = finalOffset
         } completion: {
             items.remove(at: source)
