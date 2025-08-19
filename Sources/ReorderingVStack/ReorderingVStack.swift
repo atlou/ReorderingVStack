@@ -286,7 +286,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
         let finalOffset = newPositions[newIndex] - oldPositions[source]
 
         // Animate the overlay from its current position to the target position.
-        withAnimation(.spring(duration: 0.15 / speed)) {
+        withAnimation(.spring(duration: 0.18 / speed)) {
             dragOffset = finalOffset
         } completion: {
             items.remove(at: source)
