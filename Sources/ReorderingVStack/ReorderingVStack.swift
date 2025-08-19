@@ -65,7 +65,7 @@ private struct DragToReorderModifier: ViewModifier {
 
 private struct ReorderingRow<Content: View>: View {
     let index: Int
-    let content: () -> Content
+    @ViewBuilder let content: () -> Content
     let dragChanged: (DragGesture.Value) -> Void
     let dragEnded: (DragGesture.Value) -> Void
 
@@ -98,20 +98,10 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
     public var body: some View {
         VStack(spacing: spacing ?? 0) {
             Group(subviews: content()) { collection in
-                ForEach(Array(zip(items.indices, items)), id: \.1.id) { (index, item) in
+                ForEach(Array(zip(items.indices, items)), id: \.1.id) { index, _ in
                     let isDragging = (sourceIndex == index)
                     let shift = shiftForRow(at: index)
-
-                    let rowView = ReorderingRow(
-                        index: index,
-                        content: { collection[index] },
-                        dragChanged: { value in
-                            handleDragChanged(for: index, value: value)
-                        },
-                        dragEnded: { _ in
-                            handleDragEnded()
-                        }
-                    )
+                    let rowView = rowView(for: index, collection: collection)
 
                     rowView
                         .sizeReader(index, size: sizeBinding(index: index))
@@ -131,9 +121,25 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
             }
         }
         .onChange(of: rowSizes) {
-            print("rowSizes changed")
             self.topPositions = computeTopPositions()
         }
+    }
+
+    func rowView(for index: Int, collection: SubviewsCollection) -> some View {
+        ReorderingRow(
+            index: index,
+            content: {
+                if collection.indices.contains(index) {
+                    collection[index]
+                }
+            },
+            dragChanged: { value in
+                handleDragChanged(for: index, value: value)
+            },
+            dragEnded: { _ in
+                handleDragEnded()
+            }
+        )
     }
 
     func sizeBinding(index: Int) -> Binding<CGSize> {
@@ -154,7 +160,6 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
 
     // Returns the Y positions (tops) for each row.
     func computeTopPositions() -> [CGFloat] {
-        print("computing top pos")
         var positions: [CGFloat] = []
         var current: CGFloat = 0
         for i in 0 ..< items.count {
