@@ -95,7 +95,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
         items: Binding<[Item]>,
         spacing: CGFloat? = nil,
         sensoryFeedback: SensoryFeedback? = .selection,
-        speed: CGFloat = 1.0,
+        speed: CGFloat = 0.7,
         @ViewBuilder content: @escaping () -> Content
     ) {
         _items = items
@@ -286,7 +286,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
         let finalOffset = newPositions[newIndex] - oldPositions[source]
 
         // Animate the overlay from its current position to the target position.
-        withAnimation(.spring(duration: 0.25 / speed)) {
+        withAnimation(.spring(duration: 0.15 / speed)) {
             dragOffset = finalOffset
         } completion: {
             items.remove(at: source)
