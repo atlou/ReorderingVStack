@@ -79,6 +79,8 @@ private struct ReorderingRow<Content: View>: View {
 public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: View {
     @Binding var items: [Item]
     var spacing: CGFloat?
+    var sensoryFeedback: SensoryFeedback?
+    var speed: CGFloat
 
     @ViewBuilder var content: () -> Content
 
@@ -89,44 +91,25 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
     @State private var rowSizes: [Int: CGSize] = [:]
     @State private var topPositions: [CGFloat] = []
 
-    public init(items: Binding<[Item]>, spacing: CGFloat? = nil, @ViewBuilder content: @escaping () -> Content) {
+    public init(
+        items: Binding<[Item]>,
+        spacing: CGFloat? = nil,
+        sensoryFeedback: SensoryFeedback? = .selection,
+        speed: CGFloat = 1.0,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
         _items = items
         self.spacing = spacing
+        self.sensoryFeedback = sensoryFeedback
+        self.speed = speed
         self.content = content
     }
 
     public var body: some View {
         VStack(spacing: spacing ?? 0) {
             Group(subviews: content()) { collection in
-                ForEach(Array(zip(items.indices, items)), id: \.1.id) { (index, item) in
-                    let isDragging = (sourceIndex == index)
-                    let shift = shiftForRow(at: index)
-
-                    let rowView = ReorderingRow(
-                        index: index,
-                        content: { collection[index] },
-                        dragChanged: { value in
-                            handleDragChanged(for: index, value: value)
-                        },
-                        dragEnded: { _ in
-                            handleDragEnded()
-                        }
-                    )
-
-                    rowView
-                        .sizeReader(index, size: sizeBinding(index: index))
-                        .opacity(isDragging ? 0 : 1)
-                        .offset(y: isDragging ? 0 : shift)
-                        .zIndex(isDragging ? 1 : 0)
-                        .overlay {
-                            if isDragging {
-                                rowView
-                                    .offset(y: dragOffset)
-                            }
-                        }
-                        .sensoryFeedback(.selection, trigger: currentTarget) { old, new in
-                            new != nil && old != nil
-                        }
+                ForEach(Array(zip(items.indices, items)), id: \.1.id) { index, _ in
+                    rowView(for: index, collection: collection)
                 }
             }
         }
@@ -134,6 +117,42 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
             print("rowSizes changed")
             self.topPositions = computeTopPositions()
         }
+    }
+
+    @ViewBuilder
+    func rowView(for index: Int, collection: SubviewsCollection) -> some View {
+        let isDragging = (sourceIndex == index)
+        let shift = shiftForRow(at: index)
+
+        let rowView = ReorderingRow(
+            index: index,
+            content: { collection[index] },
+            dragChanged: { value in
+                handleDragChanged(for: index, value: value)
+            },
+            dragEnded: { _ in
+                handleDragEnded()
+            }
+        )
+
+        rowView
+            .sizeReader(index, size: sizeBinding(index: index))
+            .opacity(isDragging ? 0 : 1)
+            .offset(y: isDragging ? 0 : shift)
+            .zIndex(isDragging ? 1 : 0)
+            .overlay {
+                if isDragging {
+                    rowView
+                        .offset(y: dragOffset)
+                }
+            }
+            .sensoryFeedback(trigger: currentTarget) { old, new in
+                guard let sensoryFeedback, new != nil && old != nil else {
+                    return nil
+                }
+
+                return sensoryFeedback
+            }
     }
 
     func sizeBinding(index: Int) -> Binding<CGSize> {
@@ -220,13 +239,13 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
         let maxY: CGFloat = topPositions[lastIndex] + (rowSizes[lastIndex]?.height ?? 0.0) - (rowSizes[sourceIndex ?? 0]?.height ?? 0.0)
         let newY = max(min(originalY + rawOffset, maxY), minY)
 
-        withAnimation(.spring(duration: 0.1)) {
+        withAnimation(.spring(duration: 0.1 * speed)) {
             dragOffset = newY - originalY
         }
 
         let computedTarget = computeTargetIndex(newY: newY, positions: topPositions)
         if computedTarget != currentTarget {
-            withAnimation(.spring(duration: 0.15)) {
+            withAnimation(.spring(duration: 0.15 * speed)) {
                 currentTarget = computedTarget
             }
         }
@@ -267,7 +286,7 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
         let finalOffset = newPositions[newIndex] - oldPositions[source]
 
         // Animate the overlay from its current position to the target position.
-        withAnimation(.spring(duration: 0.25)) {
+        withAnimation(.spring(duration: 0.25 * speed)) {
             dragOffset = finalOffset
         } completion: {
             items.remove(at: source)
