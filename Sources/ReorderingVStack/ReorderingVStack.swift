@@ -114,7 +114,6 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
             }
         }
         .onChange(of: rowSizes) {
-            print("rowSizes changed")
             self.topPositions = computeTopPositions()
         }
     }
@@ -173,7 +172,6 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
 
     // Returns the Y positions (tops) for each row.
     func computeTopPositions() -> [CGFloat] {
-        print("computing top pos")
         var positions: [CGFloat] = []
         var current: CGFloat = 0
         for i in 0 ..< items.count {
