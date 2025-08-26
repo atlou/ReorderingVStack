@@ -229,11 +229,23 @@ public struct ReorderingVStack<Content: View, Item: Identifiable & Hashable>: Vi
         }
 
         let rawOffset = value.translation.height
-        let originalY = topPositions[sourceIndex!]
+
+        guard let sourceIndex = sourceIndex,
+              topPositions.indices.contains(sourceIndex)
+        else {
+            return
+        }
+
+        let originalY = topPositions[sourceIndex]
 
         // Clamp the new Y between the top of the first row and the bottom of the last row.
         let minY: CGFloat = topPositions.first ?? 0
         let lastIndex = items.count - 1
+
+        guard topPositions.indices.contains(lastIndex) else {
+            return
+        }
+
         let maxY: CGFloat = topPositions[lastIndex] + (rowSizes[lastIndex]?.height ?? 0.0) - (rowSizes[sourceIndex ?? 0]?.height ?? 0.0)
         let newY = max(min(originalY + rawOffset, maxY), minY)
 
